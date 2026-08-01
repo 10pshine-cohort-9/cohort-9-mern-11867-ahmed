@@ -1,13 +1,17 @@
 import pino from 'pino';
 
-const logger = pino({
-  transport: {
-    target: 'pino-pretty',
-    options: {
-      colorize: true,
-      translateTime: 'SYS:standard',
-    }
-  }
-});
+const logger = pino(
+  process.env.NODE_ENV === 'production'
+    ? undefined
+    : {
+        transport: {
+          target: 'pino-pretty',
+          options: {
+            colorize: true,
+            translateTime: 'SYS:standard',
+          },
+        },
+      }
+);
 
 export default logger;

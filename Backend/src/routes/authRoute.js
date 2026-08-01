@@ -5,9 +5,17 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || "jwt_secret_key";
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error("FATAL ERROR: JWT_SECRET is not defined.");
+}
 
 router.post("/register", async (req, res, next) => {
+  if (!req.body || !req.body.username || !req.body.password) {
+    return res.status(400).json({ message: "Username and password are required" });
+  }
+
   const { username, password } = req.body;
 
   try {
@@ -34,8 +42,12 @@ router.post("/register", async (req, res, next) => {
 });
 
 router.post("/login", async (req, res, next) => {
-  const { username, password } = req.body;
+  if (!req.body || !req.body.username || !req.body.password) {
+    return res.status(400).json({ message: "Username and password are required" });
+  }
 
+  const { username, password } = req.body;
+  
   try {
     const user = await User.findOne({ username });
 

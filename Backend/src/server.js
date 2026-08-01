@@ -10,12 +10,11 @@ import connectDB from "./db.js";
 const app = express();
 
 // Connect to MongoDB
-connectDB();
+await connectDB();
 
 app.use(
   cors({
     origin: "*",
-    credentials: true,
   })
 );
 
