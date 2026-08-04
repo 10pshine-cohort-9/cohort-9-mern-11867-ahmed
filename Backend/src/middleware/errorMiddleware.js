@@ -9,10 +9,11 @@ const errorHandler = (err, req, res, next) => {
   }
 
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
-  res.status(err.status || statusCode);
+  const finalStatus = err.status || statusCode;
+  res.status(finalStatus);
 
   res.json({
-    message: err.message || "Internal Server Error",
+    message: finalStatus >= 500 ? "Internal Server Error" : (err.message || "An error occurred"),
     stack: process.env.NODE_ENV === "production" ? null : err.stack,
   });
 };

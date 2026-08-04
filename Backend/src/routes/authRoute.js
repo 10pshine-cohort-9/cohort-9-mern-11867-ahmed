@@ -37,6 +37,9 @@ router.post("/register", async (req, res, next) => {
 
     res.status(201).json({ token });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ message: "Username already exists" });
+    }
     next(error);
   }
 });
@@ -55,7 +58,7 @@ router.post("/login", async (req, res, next) => {
       return res.status(404).json({ message: "user not found!" });
     }
 
-    const isPasswordValid = bcryptjs.compareSync(password, user.password);
+    const isPasswordValid = await bcryptjs.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: "invalid password!" });
     }
@@ -70,8 +73,6 @@ router.post("/login", async (req, res, next) => {
   }
 });
 
-router.post("/logout", (req, res) => {
-  res.json({ message: "Successfully logged out" });
-});
+
 
 export default router;
