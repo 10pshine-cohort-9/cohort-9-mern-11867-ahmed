@@ -3,13 +3,12 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import logger from "./utils/logger.js";
 import authRoute from "./routes/authRoute.js";
+import noteRoute from "./routes/noteRoute.js";
 import errorHandler from "./middleware/errorMiddleware.js";
-
 import connectDB from "./db.js";
 
 const app = express();
 
-// Connect to MongoDB
 await connectDB();
 
 app.use(
@@ -29,6 +28,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRoute);
+app.use("/api/notes", noteRoute);
 
 app.use(errorHandler);
 
