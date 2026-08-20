@@ -5,6 +5,10 @@ export const createNote = async (req, res, next) => {
     const { title, content } = req.body;
     const userId = req.userId;
 
+    if (!content) {
+      return res.status(400).json({ error: "Content is required" });
+    }
+
     const newNote = new Note({
       title,
       content,
@@ -50,6 +54,10 @@ export const updateNote = async (req, res, next) => {
     const noteId = req.params.id;
     const userId = req.userId;
     const { title, content } = req.body;
+
+    if (!content) {
+      return res.status(400).json({ error: "Content is required" });
+    }
 
     const updatedNote = await Note.findOneAndUpdate(
       { _id: noteId, userId },
