@@ -9,11 +9,17 @@ import connectDB from "./db.js";
 
 const app = express();
 
-await connectDB();
+try {
+  await connectDB();
+} catch (error) {
+  logger.error(`Failed to connect to database: ${error.message}`);
+  process.exit(1);
+}
 
 app.use(
   cors({
-    origin: "*",
+    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+    credentials: true,
   })
 );
 
