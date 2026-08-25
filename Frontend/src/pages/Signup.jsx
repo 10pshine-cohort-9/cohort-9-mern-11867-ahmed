@@ -55,7 +55,7 @@ const Signup = () => {
         <div className="auth-brand">
           <h2 className="auth-brand-name">Noted.</h2>
           <div className="auth-brand-icon">
-              <LuNotebook size={20} color="#555" />
+              <LuNotebook size={40} color="#555" />
             </div>
         </div>
 
