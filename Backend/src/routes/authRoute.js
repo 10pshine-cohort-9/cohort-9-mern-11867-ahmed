@@ -3,6 +3,7 @@ import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 import User from "../models/User.js";
+import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -74,5 +75,44 @@ router.post("/login", async (req, res, next) => {
 });
 
 
+router.get("/me", authMiddleware, async (req, res, next) => {
+  try {
+    const user = await User.findById(req.userId).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(user);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put("/change-password", authMiddleware, async (req, res, next) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ message: "Both current and new password are required" });
+  }
+  const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+  if (!PASSWORD_REGEX.test(newPassword)) {
+    return res.status(400).json({
+      message: "New password must be at least 8 characters and include an uppercase letter, lowercase letter, number, and special character.",
+    });
+  }
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const isValid = await bcryptjs.compare(currentPassword, user.password);
+    if (!isValid) {
+      return res.status(401).json({ message: "Current password is incorrect" });
+    }
+    user.password = await bcryptjs.hash(newPassword, 8);
+    await user.save();
+    res.json({ message: "Password updated successfully" });
+  } catch (error) {
+    next(error);
+  }
+});
 
 export default router;
