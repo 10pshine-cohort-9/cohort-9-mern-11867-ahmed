@@ -1,0 +1,10 @@
+{
+  "name": "cohort-9-mern-11867-ahmed",
+  "scripts": {
+    "scan": "dotenv -- npx sonarqube-scanner"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^11.0.0",
+    "sonarqube-scanner": "^5.0.0"
+  }
+}
