@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import DOMPurify from "dompurify";
 import api from "../utils/api";
@@ -6,7 +6,7 @@ import Navbar from "../components/Navbar";
 import NoteEditor from "../components/NoteEditor";
 import NoteViewer from "../components/NoteViewer";
 import wavesSvg from "../assets/waves.svg";
-import { LuPlus, LuTrash2, LuPencil, LuFileText } from "react-icons/lu";
+import { LuPlus, LuTrash2, LuPencil, LuFileText, LuSearch, LuArrowDown, LuArrowUp } from "react-icons/lu";
 
 const getPlainPreview = (html, maxLen = 120) => {
   const plain = DOMPurify.sanitize(html || "", { ALLOWED_TAGS: [] });
@@ -20,6 +20,8 @@ const Dashboard = () => {
   const [editorOpen, setEditorOpen] = useState(false);
   const [selectedNote, setSelectedNote] = useState(null);
   const [viewerNote, setViewerNote] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortOrder, setSortOrder] = useState("desc");
   const navigate = useNavigate();
 
   const fetchNotes = useCallback(async () => {
@@ -95,6 +97,22 @@ const Dashboard = () => {
     });
   };
 
+  const filteredAndSortedNotes = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    let result = notes;
+    if (term) {
+      result = result.filter((note) =>
+        note.title ? note.title.toLowerCase().includes(term) : false
+      );
+    }
+    
+    return [...result].sort((a, b) => {
+      const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
+    });
+  }, [notes, searchTerm, sortOrder]);
+
   return (
     <div className="dashboard-page">
       <div className="dashboard-waves" aria-hidden="true">
@@ -123,6 +141,32 @@ const Dashboard = () => {
           </button>
         </div>
 
+        {notes.length > 0 && (
+          <div className="dashboard-controls">
+            <div className="search-bar">
+              <LuSearch className="search-icon" size={18} />
+              <input
+                id="search-notes-input"
+                type="text"
+                placeholder="Search notes..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="search-input"
+                aria-label="Search notes"
+              />
+            </div>
+            <button
+              type="button"
+              className="dashboard-sort-btn"
+              onClick={() => setSortOrder(prev => prev === "desc" ? "asc" : "desc")}
+              aria-label={`Sort by date: ${sortOrder === "desc" ? "Newest first" : "Oldest first"}`}
+            >
+              {sortOrder === "desc" ? <LuArrowDown size={16} /> : <LuArrowUp size={16} />}
+              <span>{sortOrder === "desc" ? "Newest First" : "Oldest First"}</span>
+            </button>
+          </div>
+        )}
+
         {error && <div className="auth-error dashboard-error">{error}</div>}
 
         {loading ? (
@@ -149,9 +193,18 @@ const Dashboard = () => {
               Create Note
             </button>
           </div>
+        ) : filteredAndSortedNotes.length === 0 ? (
+          <div className="dashboard-empty">
+            <div className="dashboard-empty-icon">
+              <LuSearch size={32} color="#c0c0c0" />
+            </div>
+            <p className="dashboard-empty-text">
+              No notes match your search.
+            </p>
+          </div>
         ) : (
           <div className="notes-grid">
-            {notes.map((note) => (
+            {filteredAndSortedNotes.map((note) => (
               <article key={note._id} className="note-card">
                 <div
                   className="note-card-body note-card-body--clickable"
@@ -164,9 +217,12 @@ const Dashboard = () => {
                   <h2 className="note-card-title">
                     {note.title || "Untitled"}
                   </h2>
-                  <p className="note-card-content">
-                    {getPlainPreview(note.content)}
-                  </p>
+                  <div
+                    className="note-card-content"
+                    dangerouslySetInnerHTML={{
+                      __html: DOMPurify.sanitize(note.content || "No content.")
+                    }}
+                  />
                 </div>
                 <div className="note-card-footer">
                   <span className="note-card-date">
