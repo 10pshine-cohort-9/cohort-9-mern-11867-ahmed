@@ -224,4 +224,69 @@ describe("Dashboard Component", () => {
       expect(screen.getByText("Delete failed")).toBeInTheDocument();
     });
   });
+
+  test("filters notes by title when searching", async () => {
+    localStorage.setItem("token", "fake-token");
+    const mockNotes = [
+      { _id: "1", title: "Apple Note", content: "<p>Content 1</p>" },
+      { _id: "2", title: "Banana Note", content: "<p>Content 2</p>" },
+    ];
+    api.get.mockResolvedValueOnce({ data: mockNotes });
+
+    render(
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => screen.getByText("Apple Note"));
+    expect(screen.getByText("Banana Note")).toBeInTheDocument();
+
+    const searchInput = screen.getByPlaceholderText("Search notes...");
+    fireEvent.change(searchInput, { target: { value: "apple" } });
+
+    expect(screen.getByText("Apple Note")).toBeInTheDocument();
+    expect(screen.queryByText("Banana Note")).not.toBeInTheDocument();
+  });
+
+  test("shows empty search message when no titles match", async () => {
+    localStorage.setItem("token", "fake-token");
+    const mockNotes = [{ _id: "1", title: "Apple Note", content: "<p>Content 1</p>" }];
+    api.get.mockResolvedValueOnce({ data: mockNotes });
+
+    render(
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => screen.getByText("Apple Note"));
+
+    const searchInput = screen.getByPlaceholderText("Search notes...");
+    fireEvent.change(searchInput, { target: { value: "nonexistent" } });
+
+    expect(screen.getByText("No notes match your search.")).toBeInTheDocument();
+  });
+
+  test("toggles note sort order by date", async () => {
+    localStorage.setItem("token", "fake-token");
+    const mockNotes = [
+      { _id: "1", title: "Older Note", content: "<p>Content</p>", createdAt: "2023-01-01T00:00:00Z" },
+      { _id: "2", title: "Newer Note", content: "<p>Content</p>", createdAt: "2023-06-01T00:00:00Z" },
+    ];
+    api.get.mockResolvedValueOnce({ data: mockNotes });
+
+    render(
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => screen.getByText("Newer Note"));
+    const sortBtn = screen.getByRole("button", { name: /Sort by date/i });
+    expect(sortBtn).toBeInTheDocument();
+
+    fireEvent.click(sortBtn);
+    expect(screen.getByText("Oldest First")).toBeInTheDocument();
+  });
 });
