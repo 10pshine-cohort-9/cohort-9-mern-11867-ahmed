@@ -12,18 +12,28 @@ if (!JWT_SECRET) {
   throw new Error("FATAL ERROR: JWT_SECRET is not defined.");
 }
 
-router.post("/register", async (req, res, next) => {
+/**
+ * Validates and sanitizes username and password from request body.
+ * Returns { sanitizedUsername, password } on success, or sends a 400 response.
+ */
+const parseCredentials = (req, res) => {
   if (!req.body || !req.body.username || !req.body.password) {
-    return res.status(400).json({ message: "Username and password are required" });
+    res.status(400).json({ message: "Username and password are required" });
+    return null;
   }
-
   const { username, password } = req.body;
-
   // Prevent NoSQL injection: ensure username is a plain string
   if (typeof username !== "string" || username.trim() === "") {
-    return res.status(400).json({ message: "Invalid username format" });
+    res.status(400).json({ message: "Invalid username format" });
+    return null;
   }
-  const sanitizedUsername = username.trim();
+  return { sanitizedUsername: username.trim(), password };
+};
+
+router.post("/register", async (req, res, next) => {
+  const credentials = parseCredentials(req, res);
+  if (!credentials) return;
+  const { sanitizedUsername, password } = credentials;
 
   try {
     const existingUser = await User.findOne({ username: sanitizedUsername });
@@ -52,17 +62,9 @@ router.post("/register", async (req, res, next) => {
 });
 
 router.post("/login", async (req, res, next) => {
-  if (!req.body || !req.body.username || !req.body.password) {
-    return res.status(400).json({ message: "Username and password are required" });
-  }
-
-  const { username, password } = req.body;
-
-  // Prevent NoSQL injection: ensure username is a plain string
-  if (typeof username !== "string" || username.trim() === "") {
-    return res.status(400).json({ message: "Invalid username format" });
-  }
-  const sanitizedUsername = username.trim();
+  const credentials = parseCredentials(req, res);
+  if (!credentials) return;
+  const { sanitizedUsername, password } = credentials;
 
   try {
     const user = await User.findOne({ username: sanitizedUsername });
