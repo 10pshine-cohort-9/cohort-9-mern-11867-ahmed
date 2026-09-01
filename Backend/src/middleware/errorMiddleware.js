@@ -6,8 +6,9 @@ const sanitizeLogValue = (value) =>
 const errorHandler = (err, req, res, next) => {
   const safeUrl = sanitizeLogValue(req.originalUrl);
   const safeIp = sanitizeLogValue(req.ip);
+  const safeMessage = sanitizeLogValue(err.message);
   logger.error(
-    `${err.status || 500} - ${err.message} - ${safeUrl} - ${req.method} - ${safeIp}`,
+    `${err.status || 500} - ${safeMessage} - ${safeUrl} - ${req.method} - ${safeIp}`,
   );
   if (err.stack) {
     logger.error(err.stack);
