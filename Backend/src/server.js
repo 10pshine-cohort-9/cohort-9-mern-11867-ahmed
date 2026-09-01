@@ -9,6 +9,9 @@ import connectDB from "./db.js";
 
 const app = express();
 
+// Disable X-Powered-By header to prevent Express version disclosure
+app.disable("x-powered-by");
+
 try {
   await connectDB();
 } catch (error) {

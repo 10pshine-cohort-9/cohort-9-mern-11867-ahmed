@@ -1,8 +1,13 @@
 import logger from "../utils/logger.js";
 
+const sanitizeLogValue = (value) =>
+  typeof value === "string" ? value.replace(/[\r\n]/g, "_") : value;
+
 const errorHandler = (err, req, res, next) => {
+  const safeUrl = sanitizeLogValue(req.originalUrl);
+  const safeIp = sanitizeLogValue(req.ip);
   logger.error(
-    `${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`,
+    `${err.status || 500} - ${err.message} - ${safeUrl} - ${req.method} - ${safeIp}`,
   );
   if (err.stack) {
     logger.error(err.stack);

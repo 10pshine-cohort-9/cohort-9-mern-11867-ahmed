@@ -19,8 +19,14 @@ router.post("/register", async (req, res, next) => {
 
   const { username, password } = req.body;
 
+  // Prevent NoSQL injection: ensure username is a plain string
+  if (typeof username !== "string" || username.trim() === "") {
+    return res.status(400).json({ message: "Invalid username format" });
+  }
+  const sanitizedUsername = username.trim();
+
   try {
-    const existingUser = await User.findOne({ username });
+    const existingUser = await User.findOne({ username: sanitizedUsername });
     if (existingUser) {
       return res.status(400).json({ message: "Username already exists" });
     }
@@ -28,7 +34,7 @@ router.post("/register", async (req, res, next) => {
     const hashedPassword = await bcryptjs.hash(password, 8);
 
     const user = await User.create({
-      username,
+      username: sanitizedUsername,
       password: hashedPassword,
     });
 
@@ -51,9 +57,15 @@ router.post("/login", async (req, res, next) => {
   }
 
   const { username, password } = req.body;
-  
+
+  // Prevent NoSQL injection: ensure username is a plain string
+  if (typeof username !== "string" || username.trim() === "") {
+    return res.status(400).json({ message: "Invalid username format" });
+  }
+  const sanitizedUsername = username.trim();
+
   try {
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username: sanitizedUsername });
 
     if (!user) {
       return res.status(404).json({ message: "user not found!" });
