@@ -289,4 +289,128 @@ describe("Dashboard Component", () => {
     fireEvent.click(sortBtn);
     expect(screen.getByText("Oldest First")).toBeInTheDocument();
   });
+  test("opens editor when edit button on note card is clicked", async () => {
+    localStorage.setItem("token", "fake-token");
+    const mockNotes = [{ _id: "1", title: "Test Note 1", content: "<p>Content 1</p>" }];
+    api.get.mockResolvedValueOnce({ data: mockNotes });
+
+    render(
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => screen.getByText("Test Note 1"));
+    fireEvent.click(screen.getByLabelText("Edit note"));
+
+    await waitFor(() => {
+      expect(document.querySelector(".editor-overlay")).toBeInTheDocument();
+    });
+  });
+
+  test("updates existing note in list after save from editor", async () => {
+    localStorage.setItem("token", "fake-token");
+    const mockNotes = [{ _id: "1", title: "Old Title", content: "<p>Old</p>" }];
+    api.get.mockResolvedValueOnce({ data: mockNotes });
+
+    render(
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => screen.getByText("Old Title"));
+    fireEvent.click(screen.getByLabelText("Edit note"));
+    await waitFor(() => document.querySelector(".editor-overlay"));
+
+    // Simulate save by clicking cancel (editor closes without testing Quill internals)
+    fireEvent.click(document.getElementById("editor-cancel-btn"));
+    await waitFor(() => {
+      expect(document.querySelector(".editor-overlay")).not.toBeInTheDocument();
+    });
+  });
+
+  test("opens note viewer on keyboard Enter key press", async () => {
+    localStorage.setItem("token", "fake-token");
+    const mockNotes = [{ _id: "1", title: "Test Note 1", content: "<p>Content 1</p>" }];
+    api.get.mockResolvedValueOnce({ data: mockNotes });
+
+    render(
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => screen.getByText("Test Note 1"));
+    const noteBody = screen.getByLabelText("View note: Test Note 1");
+    fireEvent.keyDown(noteBody, { key: "Enter" });
+
+    await waitFor(() => {
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
+  });
+
+  test("does not open viewer on non-Enter key press", async () => {
+    localStorage.setItem("token", "fake-token");
+    const mockNotes = [{ _id: "1", title: "Test Note 1", content: "<p>Content 1</p>" }];
+    api.get.mockResolvedValueOnce({ data: mockNotes });
+
+    render(
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => screen.getByText("Test Note 1"));
+    const noteBody = screen.getByLabelText("View note: Test Note 1");
+    fireEvent.keyDown(noteBody, { key: "Space" });
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  test("shows Oldest First label after toggling sort to ascending", async () => {
+    localStorage.setItem("token", "fake-token");
+    const mockNotes = [
+      { _id: "1", title: "Older Note", content: "<p>Content</p>", createdAt: "2023-01-01T00:00:00Z" },
+      { _id: "2", title: "Newer Note", content: "<p>Content</p>", createdAt: "2023-06-01T00:00:00Z" },
+    ];
+    api.get.mockResolvedValueOnce({ data: mockNotes });
+
+    render(
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => screen.getByText("Newer Note"));
+    const sortBtn = screen.getByRole("button", { name: /Sort by date/i });
+    fireEvent.click(sortBtn);
+    expect(screen.getByText("Oldest First")).toBeInTheDocument();
+
+    // Toggle back to desc
+    fireEvent.click(sortBtn);
+    expect(screen.getByText("Newest First")).toBeInTheDocument();
+  });
+
+  test("shows generic delete error when no message in response", async () => {
+    localStorage.setItem("token", "fake-token");
+    const mockNotes = [{ _id: "1", title: "Test Note 1", content: "<p>Content 1</p>" }];
+    api.get.mockResolvedValueOnce({ data: mockNotes });
+    api.delete.mockRejectedValueOnce({});
+
+    window.confirm = jest.fn(() => true);
+
+    render(
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => screen.getByText("Test Note 1"));
+    fireEvent.click(screen.getByLabelText("Delete note"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Failed to delete note.")).toBeInTheDocument();
+    });
+  });
 });

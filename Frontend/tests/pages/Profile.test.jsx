@@ -90,4 +90,87 @@ describe("Profile Component", () => {
       expect(screen.getByText("Password updated successfully.")).toBeInTheDocument();
     });
   });
+  test("shows error when fetching profile fails", async () => {
+    localStorage.setItem("token", "fake-token");
+    api.get.mockRejectedValueOnce({ response: { data: { message: "Fetch failed" } } });
+
+    render(
+      <MemoryRouter>
+        <Profile />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Fetch failed")).toBeInTheDocument();
+    });
+  });
+
+  test("shows error when new passwords do not match", async () => {
+    localStorage.setItem("token", "fake-token");
+    api.get.mockResolvedValueOnce({ data: { username: "testuser" } });
+
+    render(
+      <MemoryRouter>
+        <Profile />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => screen.getByText("testuser"));
+
+    fireEvent.change(screen.getByLabelText("Current Password"), { target: { value: "OldPass123!" } });
+    fireEvent.change(screen.getByLabelText("New Password"), { target: { value: "NewPass123!" } });
+    fireEvent.change(screen.getByLabelText("Confirm New Password"), { target: { value: "Different123!" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Update Password" }));
+
+    expect(screen.getByText("New passwords do not match.")).toBeInTheDocument();
+  });
+
+  test("shows error when password update API call fails", async () => {
+    localStorage.setItem("token", "fake-token");
+    api.get.mockResolvedValueOnce({ data: { username: "testuser" } });
+    api.put.mockRejectedValueOnce({ response: { data: { message: "Wrong current password" } } });
+
+    render(
+      <MemoryRouter>
+        <Profile />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => screen.getByText("testuser"));
+
+    fireEvent.change(screen.getByLabelText("Current Password"), { target: { value: "WrongPass123!" } });
+    fireEvent.change(screen.getByLabelText("New Password"), { target: { value: "NewPass123!" } });
+    fireEvent.change(screen.getByLabelText("Confirm New Password"), { target: { value: "NewPass123!" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Update Password" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Wrong current password")).toBeInTheDocument();
+    });
+  });
+
+  test("shows generic error when password update fails with no message", async () => {
+    localStorage.setItem("token", "fake-token");
+    api.get.mockResolvedValueOnce({ data: { username: "testuser" } });
+    api.put.mockRejectedValueOnce({});
+
+    render(
+      <MemoryRouter>
+        <Profile />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => screen.getByText("testuser"));
+
+    fireEvent.change(screen.getByLabelText("Current Password"), { target: { value: "OldPass123!" } });
+    fireEvent.change(screen.getByLabelText("New Password"), { target: { value: "NewPass123!" } });
+    fireEvent.change(screen.getByLabelText("Confirm New Password"), { target: { value: "NewPass123!" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Update Password" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Failed to update password.")).toBeInTheDocument();
+    });
+  });
 });

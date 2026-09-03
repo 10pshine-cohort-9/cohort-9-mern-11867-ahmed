@@ -102,9 +102,9 @@ const NoteEditor = ({ note, onSave, onCancel }) => {
           </div>
 
           <div className="form-field">
-            <label className="editor-label">Content</label>
+            <label htmlFor="note-content-editor" className="editor-label">Content</label>
             <div className="quill-wrapper">
-              <div ref={editorRef} />
+              <div id="note-content-editor" ref={editorRef} />
             </div>
           </div>
 

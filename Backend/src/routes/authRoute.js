@@ -12,15 +12,31 @@ if (!JWT_SECRET) {
   throw new Error("FATAL ERROR: JWT_SECRET is not defined.");
 }
 
-router.post("/register", async (req, res, next) => {
+/**
+ * Validates and sanitizes username and password from request body.
+ * Returns { sanitizedUsername, password } on success, or sends a 400 response.
+ */
+const parseCredentials = (req, res) => {
   if (!req.body || !req.body.username || !req.body.password) {
-    return res.status(400).json({ message: "Username and password are required" });
+    res.status(400).json({ message: "Username and password are required" });
+    return null;
   }
-
   const { username, password } = req.body;
+  // Prevent NoSQL injection: ensure username is a plain string
+  if (typeof username !== "string" || username.trim() === "") {
+    res.status(400).json({ message: "Invalid username format" });
+    return null;
+  }
+  return { sanitizedUsername: username.trim(), password };
+};
+
+router.post("/register", async (req, res, next) => {
+  const credentials = parseCredentials(req, res);
+  if (!credentials) return;
+  const { sanitizedUsername, password } = credentials;
 
   try {
-    const existingUser = await User.findOne({ username });
+    const existingUser = await User.findOne({ username: sanitizedUsername });
     if (existingUser) {
       return res.status(400).json({ message: "Username already exists" });
     }
@@ -28,7 +44,7 @@ router.post("/register", async (req, res, next) => {
     const hashedPassword = await bcryptjs.hash(password, 8);
 
     const user = await User.create({
-      username,
+      username: sanitizedUsername,
       password: hashedPassword,
     });
 
@@ -46,14 +62,12 @@ router.post("/register", async (req, res, next) => {
 });
 
 router.post("/login", async (req, res, next) => {
-  if (!req.body || !req.body.username || !req.body.password) {
-    return res.status(400).json({ message: "Username and password are required" });
-  }
+  const credentials = parseCredentials(req, res);
+  if (!credentials) return;
+  const { sanitizedUsername, password } = credentials;
 
-  const { username, password } = req.body;
-  
   try {
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username: sanitizedUsername });
 
     if (!user) {
       return res.status(404).json({ message: "user not found!" });
