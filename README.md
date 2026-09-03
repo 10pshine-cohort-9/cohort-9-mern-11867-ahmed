@@ -385,12 +385,4 @@ git push origin feature/your-feature-name
 # Open a Pull Request → develop
 ```
 
----
-
-## 📄 License
-
-This project is part of the **10Pearls Cohort 9 MERN Training Program** and is intended for educational purposes.
-
----
-
 <p align="center">Made with ❤️ by Ahmed Jamil — Cohort 9</p>
